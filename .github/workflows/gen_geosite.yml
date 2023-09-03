@@ -1,0 +1,105 @@
+name: Generate CUSTOM-GEOSITE
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 22 * * *"
+  push:
+    branches:
+      - master
+
+permissions:
+   contents: write
+      
+env:
+  SED: grep "  - " | grep -v "PROCESS-NAME" | sed "s/  - //g"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 'stable'
+
+      - name: Set variables
+        run: |
+          echo "RELEASE_NAME=Released on $(date +%Y%m%d%H%M)" >> $GITHUB_ENV
+          echo "TAG_NAME=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Checkout v2fly/domain-list-community
+        uses: actions/checkout@v3
+        with:
+          repository: v2fly/domain-list-community
+          path: community
+
+      - name: Build geosite-lite.dat file
+        env:
+          NO_SKIP: true
+          SED: grep "^  - DOMAIN" | sed 's/  - DOMAIN,/full:/g' | sed 's/  - DOMAIN-SUFFIX,//g' | sed 's/  - DOMAIN-KEYWORD,/keyword:/g'
+        run: |
+          cd community || exit 1
+          mkdir -p data-lite
+          curl -sSL https://raw.githubusercontent.com/xishang0128/rules/main/biliintl.list > ./data-lite/biliintl
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/AbemaTV/AbemaTV.yaml | ${{ env.SED }} > ./data-lite/abema
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Apple/Apple_Classical.yaml | ${{ env.SED }} > ./data-lite/apple
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/AppleMusic/AppleMusic.yaml | ${{ env.SED }} > ./data-lite/applemusic
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/BiliBili/BiliBili.yaml | ${{ env.SED }} > ./data-lite/bilibili
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Bahamut/Bahamut.yaml | ${{ env.SED }} > ./data-lite/bahamut
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/GitHub/GitHub.yaml | ${{ env.SED }} > ./data-lite/github
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/ChinaMax/ChinaMax_Domain.yaml | grep -E "^  - '.+'" | sed "s/  - '+.//g" | sed "s/  - '/full:/g" | sed "s/'//g" > ./data-lite/cn
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Google/Google.yaml | ${{ env.SED }} > ./data-lite/google
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Microsoft/Microsoft.yaml | ${{ env.SED }} > ./data-lite/microsoft
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Netflix/Netflix.yaml | ${{ env.SED }} > ./data-lite/netflix
+          curl -sSL https://github.com/v2fly/domain-list-community/raw/master/data/openai > ./data-lite/openai
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/OneDrive/OneDrive.yaml | ${{ env.SED }} > ./data-lite/onedrive
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Pixiv/Pixiv.yaml | ${{ env.SED }} > ./data-lite/pixiv
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Spotify/Spotify.yaml | ${{ env.SED }} > ./data-lite/spotify
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Telegram/Telegram.yaml | ${{ env.SED }} > ./data-lite/telegram
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Twitter/Twitter.yaml | ${{ env.SED }} > ./data-lite/twitter
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/TikTok/TikTok.yaml | ${{ env.SED }} > ./data-lite/tiktok
+          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/YouTube/YouTube.yaml | ${{ env.SED }} > ./data-lite/youtube
+
+          go run ./ --datapath=./data-lite --outputname geosite.dat
+
+      - name: Build db and metadb file
+        env:
+          NO_SKIP: true
+        run: |
+          go install -trimpath -ldflags="-s -w -buildid=" github.com/metacubex/geo/cmd/geo@master
+          geo convert site -i v2ray -o sing -f geosite.db ./community/geosite.dat
+      
+      - name: Move and zip files
+        run: |
+          mkdir -p ./publish/
+          install -Dp ./community/geosite.dat ./publish/
+          install -Dp ./geosite.db ./publish/
+          cd ./publish || exit 1
+
+
+      - name: Delete current release assets
+        uses: andreaswilli/delete-release-assets-action@v3.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          deleteOnlyFromDrafts: false
+
+      - name: Git push assets to "release" branch
+        run: |
+          cd ./publish || exit 1
+          git init
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b release
+          git add .
+          git commit -m "${{ env.RELEASE_NAME }}"
+          git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git push -f -u origin release
+      
+      - name: Purge jsdelivr CDN
+        run: |
+          cd publish || exit 1
+          for file in $(ls); do
+            curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/${file}"
+          done      
