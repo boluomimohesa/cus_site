@@ -60,7 +60,6 @@ jobs:
           curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/Twitter/Twitter.yaml | ${{ env.SED }} > ./data/twitter
           curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/TikTok/TikTok.yaml | ${{ env.SED }} > ./data/tiktok
           curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/YouTube/YouTube.yaml | ${{ env.SED }} > ./data/youtube
-          curl -sSL https://github.com/blackmatrix7/ios_rule_script/raw/master/rule/Clash/GoogleFCM/GoogleFCM.yaml | grep "  - DOMAIN" | sed "s/  - DOMAIN,/full:/g" > ./data/fcm
 
           go run ./ --datapath=./data --outputname geosite.dat
 
