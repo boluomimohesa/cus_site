@@ -2,7 +2,7 @@ name: Generate CUSTOM-GEOSITE
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 22 * * *"
+    - cron: "0 0 * * 4"
   push:
     branches:
       - master
