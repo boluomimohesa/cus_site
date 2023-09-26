@@ -53,7 +53,6 @@ jobs:
           rm -rf data
           mkdir -p data
           curl -sSL ${cnUrl} | ${{ env.SED }} > ./data/cn
-          curl -sSL ${adblockUrl} | ${{ env.SED }} > ./data/adblock
           curl -sSL ${googleUrl} | ${{ env.SED }} > ./data/google
           curl -sSL ${telegramUrl} | ${{ env.SED }} > ./data/telegram
           curl -sSL ${youtubeUrl} | ${{ env.SED }} > ./data/youtube
