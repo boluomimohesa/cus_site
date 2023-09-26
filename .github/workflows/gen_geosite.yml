@@ -51,16 +51,16 @@ jobs:
         run: |
           cd community || exit 1
           mkdir -p data
-          curl -sSL ${cnUrl} | ${env.SED} > data/cn.txt
-          curl -sSL ${adblockUrl} | ${env.SED} > data/adblock.txt
-          curl -sSL ${googleUrl} | ${env.SED} > data/google.txt
-          curl -sSL ${telegramUrl} | ${env.SED} > data/telegram.txt
-          curl -sSL ${youtubeUrl} | ${env.SED} > data/youtube.txt
-          curl -sSL ${microsoftUrl} | ${env.SED} > data/microsoft.txt
-          curl -sSL ${fcmUrl} | ${env.SED} > data/fcm.txt
-          curl -sSL ${bingUrl} | ${env.SED} > data/bing.txt
-          curl -sSL ${facebookUrl} | ${env.SED} > data/social.txt
-          curl -sSL ${twitterUrl} | ${env.SED} >> data/social.txt
+          curl -sSL ${cnUrl} | ${env.SED} > ./data/cn.txt
+          curl -sSL ${adblockUrl} | ${env.SED} > ./data/adblock.txt
+          curl -sSL ${googleUrl} | ${env.SED} > ./data/google.txt
+          curl -sSL ${telegramUrl} | ${env.SED} > ./data/telegram.txt
+          curl -sSL ${youtubeUrl} | ${env.SED} > ./data/youtube.txt
+          curl -sSL ${microsoftUrl} | ${env.SED} > ./data/microsoft.txt
+          curl -sSL ${fcmUrl} | ${env.SED} > ./data/fcm.txt
+          curl -sSL ${bingUrl} | ${env.SED} > ./data/bing.txt
+          curl -sSL ${facebookUrl} | ${env.SED} > ./data/social.txt
+          curl -sSL ${twitterUrl} | ${env.SED} >> ./data/social.txt
 
           go run ./ --datapath=./data  --outputname geosite.dat
 
