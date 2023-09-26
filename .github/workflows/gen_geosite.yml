@@ -50,6 +50,7 @@ jobs:
           SED: grep -E "^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)" | sed "s/^DOMAIN,/full:/g" | sed "s/^DOMAIN-SUFFIX,//g" | sed "s/DOMAIN-KEYWORD,/keyword:/g"
         run: |
           cd community || exit 1
+          rm -rf data
           mkdir -p data
           curl -sSL ${cnUrl} | ${{ env.SED }} > ./data/cn
           curl -sSL ${adblockUrl} | ${{ env.SED }} > ./data/adblock
@@ -61,6 +62,7 @@ jobs:
           curl -sSL ${bingUrl} | ${{ env.SED }} > ./data/bing
           curl -sSL ${facebookUrl} | ${{ env.SED }} > ./data/social
           curl -sSL ${twitterUrl} | ${{ env.SED }} >> ./data/social
+          curl -sSL ${openaiUrl} | ${{ env.SED }} > ./data/openai
 
           go run ./ --datapath=./data  --outputname geosite.dat
 
